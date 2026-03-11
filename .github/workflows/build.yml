@@ -1,0 +1,74 @@
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            deps: |
+              sudo apt-get update
+              sudo apt-get install -y libasound2-dev libfreetype-dev libx11-dev \
+                libxcomposite-dev libxcursor-dev libxext-dev libxfixes-dev \
+                libxinerama-dev libxrandr-dev libxrender-dev libwebkit2gtk-4.1-dev \
+                libcurl4-openssl-dev
+            artifact_glob: 'build/Mono101_artefacts/Release/VST3/*.vst3'
+            zip_name: Mono101-linux-vst3
+          - os: macos-latest
+            name: macos
+            deps: ''
+            artifact_glob: 'build/Mono101_artefacts/Release'
+            zip_name: Mono101-macos
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        if: matrix.deps != ''
+        run: ${{ matrix.deps }}
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package Linux VST3
+        if: matrix.name == 'linux'
+        run: |
+          cd build/Mono101_artefacts/Release/VST3
+          zip -r ${{ github.workspace }}/Mono101-linux-vst3.zip .
+
+      - name: Package macOS VST3 + AU
+        if: matrix.name == 'macos'
+        run: |
+          cd build/Mono101_artefacts/Release
+          zip -r ${{ github.workspace }}/Mono101-macos.zip VST3/ AU/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.zip_name }}
+          path: ${{ matrix.zip_name }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: '*.zip'
+          generate_release_notes: true
