@@ -166,10 +166,18 @@ void Mono101Slider::resized()
     int topH = topLabel.getText().isNotEmpty() ? 12 : 0;
     int bottomH = 12;
 
-    if (topH > 0)
-        topLabel.setBounds(b.removeFromTop(topH));
+    // Let labels extend wider than the slider column to avoid clipping
+    int labelW = juce::jmax(b.getWidth(), 40);
+    int labelX = b.getCentreX() - labelW / 2;
 
-    nameLabel.setBounds(b.removeFromBottom(bottomH));
+    if (topH > 0)
+    {
+        topLabel.setBounds(labelX, b.getY(), labelW, topH);
+        b.removeFromTop(topH);
+    }
+
+    nameLabel.setBounds(labelX, b.getBottom() - bottomH, labelW, bottomH);
+    b.removeFromBottom(bottomH);
     slider.setBounds(b);
 }
 
@@ -706,7 +714,7 @@ void Mono101Editor::resized()
     // Row 1: Main panel
     const int row1Y = bodyY + 46 + 16;    // after brand bar + padding
     const int secH = 140;                  // section height
-    const int sliderW = 28;               // width per slider column
+    const int sliderW = 32;               // width per slider column
     // const int sliderH = 90;
     const int xsW = 18;                   // xs switch width
     const int xsH = 32;                   // xs switch slider height
