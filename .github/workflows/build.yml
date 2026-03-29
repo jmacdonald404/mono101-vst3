@@ -24,6 +24,11 @@ jobs:
             deps: ''
             artifact_glob: 'build/Mono101_artefacts/Release'
             zip_name: Mono101-macos
+          - os: windows-latest
+            name: windows
+            deps: ''
+            artifact_glob: 'build/Mono101_artefacts/Release/VST3/*.vst3'
+            zip_name: Mono101-windows-vst3
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -46,6 +51,12 @@ jobs:
         run: |
           cd build/Mono101_artefacts/Release/VST3
           zip -r ${{ github.workspace }}/Mono101-linux-vst3.zip .
+
+      - name: Package Windows VST3
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/Mono101_artefacts/Release/VST3/* -DestinationPath Mono101-windows-vst3.zip
 
       - name: Package macOS VST3 + AU
         if: matrix.name == 'macos'
